@@ -22,27 +22,31 @@ public class Main {
 
         final CountDownLatch latch = new CountDownLatch(6);
 
-        for (int i = 0; i < 4; i++) {
+        // make some threads that only sleep
+        for (int i = 0; i < 3; i++) {
+            final int number = i + 1;
             EXECUTOR.execute(() -> {
+                Thread.currentThread().setName("sleeper-" + number);
+                System.out.println("Starting sleeping thread: " + Thread.currentThread().getName());
                 latch.countDown();
 
-                System.out.println("Starting sleeping thread: " + Thread.currentThread().getName());
-
                 while (true) {
-                    sleep(1000 + RNG.nextInt(3000));
+                    sleep(1000 + RNG.nextInt(2000));
                 }
             });
         }
 
-        for (int i = 0; i < 2; i++) {
+        // make some threads that generate load by busy waiting
+        for (int i = 0; i < 3; i++) {
+            final int number = i + 1;
             EXECUTOR.execute(() -> {
-                latch.countDown();
-
+                Thread.currentThread().setName("spinner-" + number);
                 System.out.println("Starting spinning thread: " + Thread.currentThread().getName());
+                latch.countDown();
 
                 while (true) {
                     long now = System.currentTimeMillis();
-                    long spin = RNG.nextInt(1000);
+                    long spin = RNG.nextInt(2000);
                     while (System.currentTimeMillis() < now + spin) {
                     }
                     sleep(RNG.nextInt(2000));
@@ -50,6 +54,7 @@ public class Main {
             });
         }
 
+        // wait for all the threads to start
         try {
             latch.await();
         } catch (InterruptedException e) {
